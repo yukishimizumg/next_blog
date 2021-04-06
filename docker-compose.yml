@@ -1,0 +1,60 @@
+# Composeのバージョン指定
+version: "3.6"
+
+# サービス定義
+services:
+  # サービス名を指定(複数サービスで同じサービス名も使える)
+  # サービス=コンテナと考えてOK
+  # appはPHPを実行するためのサービス
+  app:
+    # Dockerfileの場所を指定
+    build: ./docker/app
+    # イメージ名を指定(イメージ名:タグ) buildと併用するとimageが見つからない場合にbuildを実行する
+    image: camp/app:1
+    # 開放するポートを指定(ホスト:コンテナ)
+    ports:
+      - 8000:8000
+    # マウント(ローカルのディレクトリとコンテナのディレクトリを紐付ける)するボリュームを指定(ホスト:コンテナ)フォルダ単位でもファイル単位でも指定できる
+    volumes:
+      # ローカルのserverとコンテナ内の/var/wwwがマウントされる
+      - ./server:/var/www
+      # ローカルのlog/error.logとコンテナ内のlog/error.logがマウントされる
+      - ./log/error.log:/var/log/php/error.log
+    # ログイン時のディレクトリを指定(無いディレクトリは指定できない)
+    working_dir: /var/www
+
+  # nginxはWebサーバー用のサービス
+  nginx:
+    # nginxというイメージを使用します(DockerHubからpullしてくる)
+    image: nginx
+    # 開放するポートを指定(ホスト:コンテナ)
+    # HTTPは80番ポートを使用
+    ports:
+      - 80:80
+    volumes:
+      # ローカルのserverとコンテナ内の/var/wwwがマウントされる
+      - ./server:/var/www
+      # ローカルのdocker/nginx/default.confとコンテナ内の/etc/nginx/conf.d/default.confがマウントされる
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    # コンテナの作成順を指定
+    # appコンテナ起動後にnginxコンテナを起動
+    depends_on:
+      - app
+
+  db:
+    # Dockerfileの場所を指定
+    build: docker/db/
+    image: camp/db:1
+    # build後も使用出来る環境変数としてパスワードを設定(${}を使って.envの環境変数を指定)
+    environment:
+      # .envに記載されている環境変数(MYSQL_ROOT_PASSWORD)を読み込む
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # マウントするボリュームを指定(ホスト:コンテナ) ここにDBデータが保存される
+    volumes:
+      # ローカルのmysql-dataとコンテナ内の/var/lib/mysqlがマウントされる
+      - "./mysql-data:/var/lib/mysql"
+    # MySQLは3306番ポートを使用
+    ports:
+      - 3306:3306
+    # docker-toolboxは非同期ディスク I/Oが使用出来ないためこの設定が必要
+    command: --innodb-use-native-aio=0

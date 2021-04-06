@@ -1,0 +1,4 @@
+mysql-data
+.env
+log
+server/public/images/
