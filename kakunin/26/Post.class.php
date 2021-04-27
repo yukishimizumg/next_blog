@@ -360,10 +360,6 @@ class Post
 
     private function fileDelete($file)
     {
-        if (empty($file)) {
-            return true;
-        }
-
         try {
             $file_path = self::IMAGE_DIR_PATH . $file;
             if (file_exists($file_path)) {

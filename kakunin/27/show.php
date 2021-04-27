@@ -47,16 +47,14 @@ $comments = $post->findCommentsWithUser();
                 <img src="<?= h($post->getImagePath()) ?>" alt="">
             </div>
             <p class="post-body"><?= nl2br(h($post->getBody())) ?></p>
-            <?php if ($current_user['id'] === $post->getUserId()): ?>
-                <div class="post-btn-edit-area">
-                    <a href="edit.php?id=<?= $post->getId() ?>" class="btn btn-edit">編集</a>
-                    <form action="delete.php" method="post">
-                        <input type="hidden" name="token" value="<?= h($token) ?>">
-                        <input type="hidden" name="id" value="<?= h($post->getId()) ?>">
-                        <input type="submit" value="削除" class="btn btn-delete" onClick="return confirm('ブログを削除しますか？')">
-                    </form>
-                </div>
-            <?php endif; ?>
+            <div class="post-btn-edit-area">
+                <a href="edit.php?id=<?= $post->getId() ?>" class="btn btn-edit">編集</a>
+                <form action="delete.php" method="post">
+                    <input type="hidden" name="token" value="<?= h($token) ?>">
+                    <input type="hidden" name="id" value="<?= h($post->getId()) ?>">
+                    <input type="submit" value="削除" class="btn btn-delete" onClick="return confirm('ブログを削除しますか？')">
+                </form>
+            </div>
         </article>
         <div class="comment">
             <div class="comment-header">
@@ -85,8 +83,6 @@ $comments = $post->findCommentsWithUser();
                                         <div class="comment-btn-area">
                                             <a href="/comments/edit.php?id=<?= $c->getId() ?>" class="comment-edit">編集</a>
                                             <form action="/comments/delete.php" method="post">
-                                                <input type="hidden" name="token" value="<?= h($token) ?>">
-                                                <input type="hidden" name="id" value="<?= h($c->getId()) ?>">
                                                 <input type="submit" value="削除" class="comment-delete" onClick="return confirm('ブログのコメントを削除しますか？')">
                                             </form>
                                         </div>

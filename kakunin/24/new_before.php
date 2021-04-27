@@ -20,9 +20,6 @@
 </div>
 <div class="form-group">
     <label for="image">イメージ画像</label>
-    <?php if ($post->getImage()): ?>
-        <img src="<?= h($post->getImagePath()) ?>" alt="" class="image-preview">
-    <?php endif; ?>
     <input type="file" name="image" id="image" <?php if ($errors['image']) echo 'class="error-field"' ?>>
     <?php if ($errors['image']) echo (createErrMsg($errors['image'])) ?>
 </div>

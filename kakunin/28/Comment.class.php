@@ -205,11 +205,6 @@ class Comment
         return self::findCommentsByPostId($post_id);
     }
 
-    public static function findPostIdsByMyComments($user_id)
-    {
-        return self::findPostIdsByUserId($user_id);
-    }
-
     private static function findCommentsByPostId($post_id)
     {
         $instances = [];
@@ -273,32 +268,5 @@ class Comment
             error_log($e->getMessage());
         }
         return $instance;
-    }
-
-    private static function findPostIdsByUserId($user_id)
-    {
-        $ids = [];
-        try {
-            $dbh = connectDb();
-            $sql = <<<EOM
-            SELECT
-                DISTINCT post_id
-            FROM
-                comments
-            WHERE
-                user_id = :user_id
-            EOM;
-
-            $stmt = $dbh->prepare($sql);
-            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if ($posts) {
-                $ids = array_column($posts, 'post_id');
-            }
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-        }
-        return $ids;
     }
 }

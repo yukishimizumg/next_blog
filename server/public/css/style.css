@@ -476,7 +476,9 @@ ul {
     }
 }
 @media screen and (max-width: 900px) {
-    .wrapper,
+    .wrapper {
+        width: 700px;
+    }
     .user-wrapper {
         width: 600px;
     }

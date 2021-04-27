@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . '/../common/config.php';
 require_once __DIR__ . '/../common/functions.php';
+require_once __DIR__ . '/Comment.class.php';
+require_once __DIR__ . '/Post.class.php';
 
 class User
 {
-    private const IMAGE_DIR_PATH = '../images/users/';
+    private const IMAGE_DIR_PATH = '/var/www/public/images/users/';
     private const IMAGE_ROOT_PATH = '/images/users/';
     private const NO_IMAGE = 'no_image.png';
     private const EXTENTION = ['jpg', 'jpeg', 'png', 'gif'];
@@ -37,6 +39,11 @@ class User
         $this->avatar_old = $params['avatar_old'];
         $this->created_at = $params['created_at'];
         $this->updated_at = $params['updated_at'];
+    }
+
+    public function getId()
+    {
+        return $this->id;
     }
 
     public function getEmail()
@@ -178,6 +185,39 @@ class User
         }
     }
 
+    public function delete()
+    {
+        try {
+            // データベース接続
+            $dbh = connectDb();
+            $dbh->beginTransaction();
+
+            // 削除
+            $this->deleteMe($dbh);
+
+            // commnets_count更新
+            $this->updateCommentsCount($dbh);
+
+            // アバター画像削除
+            $this->fileDelete($this->avatar);
+
+            $_SESSION = [];
+
+            if (isset($_COOKIE[session_name()])) {
+                setcookie(session_name(), '', time() - 86400);
+            }
+
+            session_regenerate_id(true);
+
+            $dbh->commit();
+            return true;
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            $dbh->rollBack();
+            return false;
+        }
+    }
+
     private function emailValidate()
     {
         if ($this->email == '') {
@@ -278,7 +318,7 @@ class User
         $stmt->bindParam(':avatar', $this->avatar, PDO::PARAM_STR);
         $stmt->execute();
 
-        $this->id = $dbh->lastInsertId('id');
+        $this->id = $dbh->lastInsertId();
     }
 
     private function updateMe($dbh)
@@ -313,6 +353,15 @@ class User
         $stmt->execute();
     }
 
+    private function deleteMe($dbh)
+    {
+        $sql = 'DELETE FROM users WHERE id = :id';
+
+        $stmt = $dbh->prepare($sql);
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
     private function fileUpload()
     {
         try {
@@ -331,6 +380,10 @@ class User
 
     private function fileDelete($file)
     {
+        if (empty($file)) {
+            return true;
+        }
+
         try {
             $file_path = self::IMAGE_DIR_PATH . $file;
             if (file_exists($file_path)) {
@@ -348,9 +401,9 @@ class User
         $_SESSION['current_user']['id'] = $this->id;
         $_SESSION['current_user']['name'] = $this->name;
         if (empty($this->avatar)) {
-            $_SESSION['current_user']['avatar'] = self::IMAGE_DIR_PATH . self::NO_IMAGE;
+            $_SESSION['current_user']['avatar'] = self::IMAGE_ROOT_PATH . self::NO_IMAGE;
         } else {
-            $_SESSION['current_user']['avatar'] = self::IMAGE_DIR_PATH . $this->avatar;
+            $_SESSION['current_user']['avatar'] = self::IMAGE_ROOT_PATH . $this->avatar;
         }
     }
 
@@ -393,8 +446,17 @@ class User
         if ($params['avatar_tmp']['name']) {
             $this->avatar_tmp = $params['avatar_tmp'];
             $this->avatar_old = $this->avatar;
-            $this->avatar = date('YmdHis') . '_' . $params['avatar_tmp']["name"];
+            $this->avatar = date('YmdHis') . '_' . $params['avatar_tmp']['name'];
         }
+    }
+
+    private function updateCommentsCount($dbh)
+    {
+        // 自分が投稿したコメントに紐づくブログのidを配列で取得
+        $post_ids = Comment::findPostIdsByMyComments($this->id);
+
+        // ブログのidを基にコメント件数を更新
+        Post::updatePostCommentsCountByIds($dbh, $post_ids);
     }
 
     public static function find($id)
@@ -464,9 +526,9 @@ class User
         $params['profile'] = $input_params['profile'];
         $params['email'] = $input_params['email'];
 
-        if ($_FILES['avatar']['name']) {
-            $params['avatar_tmp'] = $_FILES['avatar'];
-            $params['avatar'] = date('YmdHis') . '_' . $params['avatar_tmp']['name'];
+        if ($input_params['avatar_tmp']['name']) {
+            $params['avatar_tmp'] = $input_params['avatar_tmp'];
+            $params['avatar'] = date('YmdHis') . '_' . $input_params['avatar_tmp']['name'];
         }
         return $params;
     }

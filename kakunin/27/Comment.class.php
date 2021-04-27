@@ -121,25 +121,6 @@ class Comment
         }
     }
 
-    public function delete()
-    {
-        try {
-            // データベース接続
-            $dbh = connectDb();
-            $dbh->beginTransaction();
-
-            $this->deleteMe($dbh);
-            Post::updatePostCommentsCountByIds($dbh, $this->post_id);
-
-            $dbh->commit();
-            return true;
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-            $dbh->rollBack();
-            return false;
-        }
-    }
-
     private function commentValidate()
     {
         if ($this->comment == '') {
@@ -191,23 +172,9 @@ class Comment
         $stmt->execute();
     }
 
-    private function deleteMe($dbh)
-    {
-        $sql = 'DELETE FROM comments WHERE id = :id';
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-
     public static function findByPostId($post_id)
     {
         return self::findCommentsByPostId($post_id);
-    }
-
-    public static function findPostIdsByMyComments($user_id)
-    {
-        return self::findPostIdsByUserId($user_id);
     }
 
     private static function findCommentsByPostId($post_id)
@@ -273,32 +240,5 @@ class Comment
             error_log($e->getMessage());
         }
         return $instance;
-    }
-
-    private static function findPostIdsByUserId($user_id)
-    {
-        $ids = [];
-        try {
-            $dbh = connectDb();
-            $sql = <<<EOM
-            SELECT
-                DISTINCT post_id
-            FROM
-                comments
-            WHERE
-                user_id = :user_id
-            EOM;
-
-            $stmt = $dbh->prepare($sql);
-            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if ($posts) {
-                $ids = array_column($posts, 'post_id');
-            }
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-        }
-        return $ids;
     }
 }

@@ -5,6 +5,7 @@ require_once __DIR__ . "/../../models/User.class.php";
 session_start();
 
 if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
+    // トークンの検証
     $token = filter_input(INPUT_POST, 'token');
     if (empty($_SESSION['token']) || $_SESSION['token'] !== $token) {
         redirectAlert(
@@ -20,6 +21,8 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
             FILTER_DEFAULT,
             FILTER_REQUIRE_ARRAY
         );
+    // 画像ファイルの情報もセット
+    $input_params['avatar_tmp'] = $_FILES['avatar'];
     $user = new User(User::setParams($input_params));
 
     // バリデーション & 登録

@@ -28,8 +28,8 @@ class User
         $this->id = $params['id'];
         $this->email = $params['email'];
         $this->password = $params['password'];
-        $this->now_password = $params['now_password'];
         $this->confirm_password = $params['confirm_password'];
+        $this->now_password = $params['now_password'];
         $this->name = $params['name'];
         $this->profile = $params['profile'];
         $this->avatar = $params['avatar'];
@@ -84,15 +84,17 @@ class User
         return $this->errors ? false : true;
     }
 
-    public function updatePropaty($params)
+    public function updateProperty($params)
     {
-        $this->updateMyPropaty($params);
+        $this->updateMyProperty($params);
     }
 
     public function updateValidate()
     {
         $this->emailValidate();
-        if ($this->now_password) {
+        if ($this->password ||
+            $this->confirm_password ||
+            $this->now_password) {
             $this->passwordValidate();
             $this->passwordMatchValidate();
         }
@@ -204,11 +206,11 @@ class User
             if (mb_strlen($this->password) > 255) {
                 $this->errors['password'][] = MSG_PASSWORD_MAX;
             }
-        }
 
-        $reg_str = '/\A(?=.*?[a-z])(?=.*?\d)[a-z\d]{8,}+\z/i';
-        if (!preg_match($reg_str, $this->password)) {
-            $this->errors['password'][] = MSG_PASSWORD_FORMAT;
+            $reg_str = '/\A(?=.*?[a-z])(?=.*?\d)[a-z\d]{8,}+\z/i';
+            if (!preg_match($reg_str, $this->password)) {
+                $this->errors['password'][] = MSG_PASSWORD_FORMAT;
+            }
         }
 
         if ($this->confirm_password == '') {
@@ -249,8 +251,8 @@ class User
 
     private function avatarValidate()
     {
-        if ($this->avatar_tmp["name"]) {
-            $ext = mb_strtolower(pathinfo($this->avatar_tmp["name"], PATHINFO_EXTENSION));
+        if ($this->avatar_tmp['name']) {
+            $ext = mb_strtolower(pathinfo($this->avatar_tmp['name'], PATHINFO_EXTENSION));
             if (!in_array($ext, self::EXTENTION)) {
                 $this->errors['avatar'][] = MSG_AVATAR_FORMAT;
             }
@@ -314,10 +316,11 @@ class User
     private function fileUpload()
     {
         try {
-            if ($this->avatar_tmp["name"]) {
-                $image = date('YmdHis') . '_' . $this->avatar_tmp["name"];
-                move_uploaded_file($this->avatar_tmp['tmp_name'], self::IMAGE_DIR_PATH . $image);
-                $this->avatar = $image;
+            if ($this->avatar_tmp['name']) {
+                move_uploaded_file(
+                    $this->avatar_tmp['tmp_name'],
+                    self::IMAGE_DIR_PATH . $this->avatar
+                );
             }
             return true;
         } catch (Exception $e) {
@@ -378,7 +381,7 @@ class User
         }
     }
 
-    private function updateMyPropaty($params)
+    private function updateMyProperty($params)
     {
         $this->email = $params['email'];
         $this->password = $params['password'];
@@ -386,10 +389,11 @@ class User
         $this->now_password = $params['now_password'];
         $this->name = $params['name'];
         $this->profile = $params['profile'];
+
         if ($params['avatar_tmp']['name']) {
             $this->avatar_tmp = $params['avatar_tmp'];
             $this->avatar_old = $this->avatar;
-            $this->avatar = date('YmdHis') . '_' . $params['avatar_tmp']["name"];
+            $this->avatar = date('YmdHis') . '_' . $params['avatar_tmp']['name'];
         }
     }
 
@@ -460,9 +464,9 @@ class User
         $params['profile'] = $input_params['profile'];
         $params['email'] = $input_params['email'];
 
-        if ($_FILES['avatar']['name']) {
-            $params['avatar_tmp'] = $_FILES['avatar'];
-            $params['avatar'] = date('YmdHis') . '_' . $params['avatar_tmp']['name'];
+        if ($input_params['avatar_tmp']) {
+            $params['avatar_tmp'] = $input_params['avatar_tmp'];
+            $params['avatar'] = date('YmdHis') . '_' . $input_params['avatar_tmp']['name'];
         }
         return $params;
     }

@@ -9,8 +9,8 @@ $token = generateToken();
 $alert = getAlert();
 $errors = getErrors();
 $post_data = getPostData();
-$current_user = getCurrentUser();
 
+$current_user = getCurrentUser();
 if (empty($current_user)) {
     redirectAlert(
         '/users/log_in.php',
@@ -81,6 +81,8 @@ if ($post_data) {
                 </div>
             </form>
             <form action="delete.php" method="post">
+                <input type="hidden" name="token" value="<?= h($token) ?>">
+                <input type="hidden" name="id" value="<?= h($user->getId()) ?>">
                 <input type="submit" value="削除" class="btn btn-delete" onClick="return confirm('アカウントを削除しますか？')">
             </form>
         </div>

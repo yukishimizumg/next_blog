@@ -360,10 +360,6 @@ class Post
 
     private function fileDelete($file)
     {
-        if (empty($file)) {
-            return true;
-        }
-
         try {
             $file_path = self::IMAGE_DIR_PATH . $file;
             if (file_exists($file_path)) {
@@ -419,11 +415,6 @@ class Post
     public static function find($id)
     {
         return self::findById($id);
-    }
-
-    public static function updatePostCommentsCountByIds($dbh, $ids)
-    {
-        return self::updateCommentCountByIds($dbh, $ids);
     }
 
     private static function findById($id)
@@ -576,34 +567,5 @@ class Post
             $params['image'] = date('YmdHis') . '_' . $input_params['image_tmp']['name'];
         }
         return $params;
-    }
-
-    private static function updateCommentCountByIds($dbh, $ids)
-    {
-        if (!is_array($ids)) {
-            $ids = [$ids];
-        }
-
-        $sql = '';
-        $sql .= 'UPDATE ';
-        $sql .= '    posts AS p ';
-        $sql .= 'INNER JOIN ';
-        $sql .= '   ( ';
-        $sql .= '    SELECT ';
-        $sql .= '        COUNT(c.id) AS cnt, ';
-        $sql .= '        c.post_id ';
-        $sql .= '    FROM ';
-        $sql .= '        comments c ';
-        $sql .= '    WHERE ';
-        $sql .= '        c.post_id IN (' . substr(str_repeat(',?', count($ids)), 1) . ') ';
-        $sql .= '    GROUP BY c.post_id ';
-        $sql .= '   ) cm ';
-        $sql .= 'ON ';
-        $sql .= '    p.id = cm.post_id ';
-        $sql .= 'SET ';
-        $sql .= '    p.comments_count = cm.cnt';
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->execute($ids);
     }
 }

@@ -24,11 +24,6 @@ class Comment
         $this->updated_at = $params['updated_at'];
     }
 
-    public function getId()
-    {
-        return $this->id;
-    }
-
     public function getPostId()
     {
         return $this->post_id;
@@ -47,14 +42,6 @@ class Comment
     public function getCreatedAt()
     {
         return $this->created_at;
-    }
-
-    public function getPost()
-    {
-        if (empty($this->post)) {
-            $this->post = Post::find($this->post_id);
-        }
-        return $this->post;
     }
 
     public function getUser()
@@ -98,48 +85,6 @@ class Comment
         }
     }
 
-    public function updateProperty($params)
-    {
-        $this->updateMyProperty($params);
-    }
-
-    public function update()
-    {
-        try {
-            // データベース接続
-            $dbh = connectDb();
-            $dbh->beginTransaction();
-
-            $this->updateMe($dbh);
-
-            $dbh->commit();
-            return true;
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-            $dbh->rollBack();
-            return false;
-        }
-    }
-
-    public function delete()
-    {
-        try {
-            // データベース接続
-            $dbh = connectDb();
-            $dbh->beginTransaction();
-
-            $this->deleteMe($dbh);
-            Post::updatePostCommentsCountByIds($dbh, $this->post_id);
-
-            $dbh->commit();
-            return true;
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-            $dbh->rollBack();
-            return false;
-        }
-    }
-
     private function commentValidate()
     {
         if ($this->comment == '') {
@@ -169,45 +114,9 @@ class Comment
         $this->id = $dbh->lastInsertId();
     }
 
-    private function updateMyProperty($params)
-    {
-        $this->comment = $params['comment'];
-    }
-
-    private function updateMe($dbh)
-    {
-        $sql = <<<EOM
-        UPDATE
-            comments
-        SET
-            comment = :comment
-        WHERE
-            id = :id
-        EOM;
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':comment', $this->comment, PDO::PARAM_STR);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-
-    private function deleteMe($dbh)
-    {
-        $sql = 'DELETE FROM comments WHERE id = :id';
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-
     public static function findByPostId($post_id)
     {
         return self::findCommentsByPostId($post_id);
-    }
-
-    public static function findPostIdsByMyComments($user_id)
-    {
-        return self::findPostIdsByUserId($user_id);
     }
 
     private static function findCommentsByPostId($post_id)
@@ -239,11 +148,6 @@ class Comment
         return self::setInputParams($input_params);
     }
 
-    public static function find($id)
-    {
-        return self::findById($id);
-    }
-
     private static function setInputParams($input_params)
     {
         $params = [];
@@ -251,54 +155,5 @@ class Comment
         $params['user_id'] = $input_params['current_user']['id'];
         $params['comment'] = $input_params['comment'];
         return $params;
-    }
-
-    private static function findById($id)
-    {
-        $instance = [];
-        try {
-            // データベース接続
-            $dbh = connectDb();
-
-            $sql = 'SELECT * FROM comments WHERE id = :id';
-            $stmt = $dbh->prepare($sql);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $comment = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($comment) {
-                $instance = new static($comment);
-            }
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-        }
-        return $instance;
-    }
-
-    private static function findPostIdsByUserId($user_id)
-    {
-        $ids = [];
-        try {
-            $dbh = connectDb();
-            $sql = <<<EOM
-            SELECT
-                DISTINCT post_id
-            FROM
-                comments
-            WHERE
-                user_id = :user_id
-            EOM;
-
-            $stmt = $dbh->prepare($sql);
-            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if ($posts) {
-                $ids = array_column($posts, 'post_id');
-            }
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-        }
-        return $ids;
     }
 }

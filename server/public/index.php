@@ -45,7 +45,7 @@ $total_count = Post::findIndexViewCount($category_id);
                         </div>
                         <h3 class="post-index-title"><?= h($p->getTitle()); ?></h3>
                         <p>
-                            <?= mb_substr(h($p->getBody()), 1, 50); ?><span><a href="/posts/show.php?id=<?= h($p->getId()); ?>">続きを読む</a></span>
+                            <?= mb_substr(h($p->getBody()), 0, 50); ?><span><a href="/posts/show.php?id=<?= h($p->getId()); ?>">続きを読む</a></span>
                         </p>
                         <div class="post-index-detail">
                             <div class="post-index-user">

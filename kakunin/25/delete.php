@@ -24,31 +24,35 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
         );
     }
 
-    $input_params =
-        filter_input(
-            INPUT_POST,
-            'post',
-            FILTER_DEFAULT,
-            FILTER_REQUIRE_ARRAY
+    // 削除するブログの情報取得
+    $id = filter_input(INPUT_POST, 'id');
+    $post = Post::find($id);
+
+    if (empty($post)) {
+        redirectAlert(
+            '/',
+            MSG_POST_DOES_NOT_EXIST
         );
-    // ログインユーザーと画像ファイルの情報もセット
-    $input_params['current_user'] = $current_user;
-    $input_params['image_tmp'] = $_FILES['image'];
+    }
 
-    $post = new Post(Post::setParams($input_params));
+    // 自分のブログかチェック
+    if ($current_user['id'] !== $post->getUserId()) {
+        redirectAlert(
+            "show.php?id={$id}",
+            MSG_POST_CANNOT_BE_DELETE
+        );
+    }
 
-    // バリデーション & 登録
-    if ($post->validate() && $post->insert()) {
+    // 削除
+    if ($post->delete()) {
         redirectNotice(
-            "show.php?id={$post->getId()}",
-            MSG_POST_REGISTER
+            '/',
+            MSG_POST_DELETE
         );
     } else {
         redirectAlert(
-            'new.php',
-            MSG_POST_CANT_REGISTER,
-            $input_params,
-            $post->getErrors()
+            "show.php?id={$id}",
+            MSG_POST_CANT_DELETE
         );
     }
 }

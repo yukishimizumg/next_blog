@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/../../common/config.php';
 require_once __DIR__ . '/../../common/functions.php';
-require_once __DIR__ . '/../../models/Post.class.php';
+require_once __DIR__ . '/../../models/User.class.php';
 
 session_start();
+$errors = [];
 
 if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
     // トークンの検証
@@ -24,31 +25,35 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
         );
     }
 
-    $input_params =
-        filter_input(
-            INPUT_POST,
-            'post',
-            FILTER_DEFAULT,
-            FILTER_REQUIRE_ARRAY
+    // 削除するアカウントの情報取得
+    $id = filter_input(INPUT_POST, 'id');
+    $user = User::find($id);
+
+    if (empty($user)) {
+        redirectAlert(
+            '/',
+            MSG_USER_DOES_NOT_EXIST
         );
-    // ログインユーザーと画像ファイルの情報もセット
-    $input_params['current_user'] = $current_user;
-    $input_params['image_tmp'] = $_FILES['image'];
+    }
 
-    $post = new Post(Post::setParams($input_params));
+    // 自分のアカウントかチェック
+    if ($_SESSION['current_user']['id'] !== $user->getId()) {
+        redirectAlert(
+            '/',
+            MSG_USER_CANNOT_BE_DELETE
+        );
+    }
 
-    // バリデーション & 登録
-    if ($post->validate() && $post->insert()) {
+    // 削除
+    if ($user->delete()) {
         redirectNotice(
-            "show.php?id={$post->getId()}",
-            MSG_POST_REGISTER
+            '/',
+            MSG_USER_DELETE
         );
     } else {
         redirectAlert(
-            'new.php',
-            MSG_POST_CANT_REGISTER,
-            $input_params,
-            $post->getErrors()
+            "edit.php?id={$id}",
+            MSG_USER_CANT_DELETE
         );
     }
 }

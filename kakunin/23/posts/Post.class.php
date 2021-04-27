@@ -19,7 +19,6 @@ class Post
     private $body;
     private $image;
     private $image_tmp;
-    private $image_old;
     private $comments_count;
     private $created_at;
     private $updated_at;
@@ -35,7 +34,6 @@ class Post
         $this->body = $params['body'];
         $this->image = $params['image'];
         $this->image_tmp = $params['image_tmp'];
-        $this->image_old = $params['image_old'];
         $this->comments_count = $params['comments_count'];
         $this->created_at = $params['created_at'];
         $this->updated_at = $params['updated_at'];
@@ -56,11 +54,6 @@ class Post
         return $this->body;
     }
 
-    public function getImage()
-    {
-        return $this->image;
-    }
-
     public function getImagePath()
     {
         if (empty($this->image)) {
@@ -74,11 +67,6 @@ class Post
     public function getCategoryId()
     {
         return $this->category_id;
-    }
-
-    public function getUserId()
-    {
-        return $this->user_id;
     }
 
     public function getCommentsCount()
@@ -138,64 +126,6 @@ class Post
             $dbh->commit();
             return true;
         } catch (Exception $e) {
-            error_log($e->getMessage());
-            $dbh->rollBack();
-            return false;
-        }
-    }
-
-    public function updateProperty($params)
-    {
-        $this->updateMyProperty($params);
-    }
-
-    public function update()
-    {
-        try {
-            // データベース接続
-            $dbh = connectDb();
-            $dbh->beginTransaction();
-
-            $this->updateMe($dbh);
-
-            if (!$this->fileUpload()) {
-                throw new Exception(MSG_UPLOAD_FAILED);
-            }
-
-            if ($this->image_old) {
-                if (!$this->fileDelete($this->image_old)) {
-                    throw new Exception(MSG_FILE_DELETE_FAILED);
-                }
-            }
-
-            $dbh->commit();
-            return true;
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-            if ($this->image_old) {
-                $this->fileDelete($this->image);
-                $this->image = $this->image_old;
-            }
-
-            $dbh->rollBack();
-            return false;
-        }
-    }
-
-    public function delete()
-    {
-        try {
-            // データベース接続
-            $dbh = connectDb();
-            $dbh->beginTransaction();
-
-            $this->deleteMe($dbh);
-
-            $this->fileDelete($this->image);
-            $dbh->commit();
-
-            return true;
-        } catch (PDOException $e) {
             error_log($e->getMessage());
             $dbh->rollBack();
             return false;
@@ -297,38 +227,6 @@ class Post
         $this->id = $dbh->lastInsertId();
     }
 
-    private function updateMe($dbh)
-    {
-        $sql = <<<EOM
-        UPDATE
-            posts
-        SET
-            category_id = :category_id,
-            title = :title,
-            body = :body,
-            image = :image
-        WHERE
-            id = :id
-        EOM;
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':category_id', $this->category_id, PDO::PARAM_INT);
-        $stmt->bindParam(':title', $this->title, PDO::PARAM_STR);
-        $stmt->bindParam(':body', $this->body, PDO::PARAM_STR);
-        $stmt->bindParam(':image', $this->image, PDO::PARAM_STR);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-
-    private function deleteMe($dbh)
-    {
-        $sql = 'DELETE FROM posts WHERE id = :id';
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-
     private function fileUpload()
     {
         try {
@@ -337,37 +235,6 @@ class Post
                     $this->image_tmp['tmp_name'],
                     self::IMAGE_DIR_PATH . $this->image
                 );
-            }
-            return true;
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-            return false;
-        }
-    }
-
-    private function updateMyProperty($params)
-    {
-        $this->category_id = $params['category_id'];
-        $this->title = $params['title'];
-        $this->body = $params['body'];
-
-        if ($params['image_tmp']['name']) {
-            $this->image_tmp = $params['image_tmp'];
-            $this->image_old = $this->image;
-            $this->image = date('YmdHis') . '_' . $params['image_tmp']['name'];
-        }
-    }
-
-    private function fileDelete($file)
-    {
-        if (empty($file)) {
-            return true;
-        }
-
-        try {
-            $file_path = self::IMAGE_DIR_PATH . $file;
-            if (file_exists($file_path)) {
-                unlink($file_path);
             }
             return true;
         } catch (Exception $e) {
@@ -414,16 +281,6 @@ class Post
     public static function setParams($input_params)
     {
         return self::setInputParams($input_params);
-    }
-
-    public static function find($id)
-    {
-        return self::findById($id);
-    }
-
-    public static function updatePostCommentsCountByIds($dbh, $ids)
-    {
-        return self::updateCommentCountByIds($dbh, $ids);
     }
 
     private static function findById($id)
@@ -576,34 +433,5 @@ class Post
             $params['image'] = date('YmdHis') . '_' . $input_params['image_tmp']['name'];
         }
         return $params;
-    }
-
-    private static function updateCommentCountByIds($dbh, $ids)
-    {
-        if (!is_array($ids)) {
-            $ids = [$ids];
-        }
-
-        $sql = '';
-        $sql .= 'UPDATE ';
-        $sql .= '    posts AS p ';
-        $sql .= 'INNER JOIN ';
-        $sql .= '   ( ';
-        $sql .= '    SELECT ';
-        $sql .= '        COUNT(c.id) AS cnt, ';
-        $sql .= '        c.post_id ';
-        $sql .= '    FROM ';
-        $sql .= '        comments c ';
-        $sql .= '    WHERE ';
-        $sql .= '        c.post_id IN (' . substr(str_repeat(',?', count($ids)), 1) . ') ';
-        $sql .= '    GROUP BY c.post_id ';
-        $sql .= '   ) cm ';
-        $sql .= 'ON ';
-        $sql .= '    p.id = cm.post_id ';
-        $sql .= 'SET ';
-        $sql .= '    p.comments_count = cm.cnt';
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->execute($ids);
     }
 }

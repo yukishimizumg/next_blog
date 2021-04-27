@@ -4,7 +4,7 @@ require_once __DIR__ . "/../common/functions.php";
 
 class User
 {
-    private const IMAGE_DIR_PATH = '../images/users/';
+    private const IMAGE_DIR_PATH = '/var/www/public/images/users/';
     private const IMAGE_ROOT_PATH = '/images/users/';
     private const NO_IMAGE = 'no_image.png';
     private const EXTENTION = ['jpg', 'jpeg', 'png', 'gif'];

@@ -14,7 +14,9 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
             MSG_BAD_REQUEST
         );
     }
-    if (empty($_SESSION['current_user'])) {
+    // ログイン判定
+    $current_user = getCurrentUser();
+    if (empty($current_user)) {
         redirectAlert(
             '/users/log_in.php',
             MSG_PLEASE_SIGN_IN
@@ -22,7 +24,7 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
     }
 
     // ログインユーザー情報の取得
-    $id = $_SESSION['current_user']['id'];
+    $id = $current_user['id'];
     $user = User::find($id);
 
     // 入力内容の受け取り
@@ -33,6 +35,8 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
             FILTER_DEFAULT,
             FILTER_REQUIRE_ARRAY
         );
+    // 画像ファイルの情報もセット
+    $input_params['avatar_tmp'] = $_FILES['avatar'];
 
     // プロパティの上書き
     $user->updateProperty($input_params);

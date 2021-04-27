@@ -26,7 +26,7 @@ define('MSG_USER_CANT_REGISTER', 'アカウントの登録ができませんで�
 define('MSG_USER_REGISTER', 'アカウントを登録しました');
 define('MSG_USER_CANT_UPDATE', 'アカウントの更新ができませんでした');
 define('MSG_USER_UPDATE', 'アカウントを更新しました');
-define('MSG_SIGN_OUT', 'ログアウトしました。');
+define('MSG_SIGN_OUT', 'ログアウトしました');
 define('MSG_CANT_SIGN_IN', 'ログインできませんでした');
-define('MSG_SIGN_IN', 'ログインしました。');
-define('MSG_PLEASE_SIGN_IN', 'ログインして下さい。');
+define('MSG_SIGN_IN', 'ログインしました');
+define('MSG_PLEASE_SIGN_IN', 'ログインしてください');

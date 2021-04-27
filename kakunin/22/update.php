@@ -33,9 +33,11 @@ if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
             FILTER_DEFAULT,
             FILTER_REQUIRE_ARRAY
         );
+    // 画像ファイルの情報もセット
+    $input_params['avatar_tmp'] = $_FILES['avatar'];
 
     // プロパティの上書き
-    $user->updatePropaty($input_params);
+    $user->updateProperty($input_params);
 
     // バリデーション & 更新
     if ($user->updateValidate() && $user->update()) {
